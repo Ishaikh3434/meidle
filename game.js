@@ -280,6 +280,7 @@ function addGuessToTable(attemptNum, guessedTitle, isCorrect, comparisonData) {
     let rowHTML = `
         <td class="attempt-col">${attemptNum}</td>
         <td class="tea-name-col">${escapeHtml(guessedTitle)}</td>
+        <td class="result-col">${escapeHtml(guessedTitle)}</td>
     `;
     
     // Add comparison data cells
