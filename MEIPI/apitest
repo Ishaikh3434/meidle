@@ -1,0 +1,191 @@
+import urllib.request
+from html.parser import HTMLParser
+from urllib.parse import urljoin
+from random import randint
+PAGE_URL = "https://meileaf.com/teas/pure/"
+
+def fetch_page(link:str=PAGE_URL) -> str:
+    request = urllib.request.Request(link, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(request, timeout=20) as response:
+        return response.read().decode("utf-8", errors="replace")
+
+class LinkExtractor(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.links = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "a":
+            attrs = dict(attrs)
+            if "href" in attrs:
+                self.links.append(attrs["href"])
+    def get_filtered_links(self):
+        html = fetch_page()
+        parser = LinkExtractor()
+        parser.feed(html)
+        full_links = [urljoin(PAGE_URL, href) for href in parser.links]
+        # Filter links that start with the base /p/ and contain "tea-"
+        filtered = list(set([link for link in full_links if link.startswith("https://meileaf.com/p/") and "tea-" in link]))
+        return filtered
+
+class DataExtractor(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.notes = {}
+        self.title = ""
+        self.details = {}
+        self.brewing = {}
+        self.tea_type = ""
+        self.ths = []
+        self.spans = []
+        self.key_mapping = {
+            "WaterTemp": "WATER TEMP",
+            "Amountg per 100ml": "GRAMS PER 100ML",
+            "1st\xa0Infusionseconds": "1st STEEP",
+            "+\xa0Infusionsseconds": "INCREASE",
+            "+ Infusionsseconds": "INCREASE",
+            "Number ofInfusions": "NUMBER OF STEEPS"
+        }
+        self.in_dl = False
+        self.in_dt = False
+        self.in_dd = False
+        self.in_h1 = False
+        self.in_detail_dl = False
+        self.in_detail_dt = False
+        self.in_detail_dd = False
+        self.in_brewing_div = False
+        self.in_tea_type_a = False
+        self.in_tea_type_span = False
+        self.in_tea_type_span = False
+        self.in_th = False
+        self.in_span = False
+        self.current_dt = ""
+        self.current_dd = ""
+        self.current_detail_dt = ""
+        self.current_detail_dd = ""
+        self.current_th = ""
+        self.current_span = ""
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == "dl" and attrs.get("class") == "product-tasting-notes__list":
+            self.in_dl = True
+        elif self.in_dl and tag == "dt":
+            self.in_dt = True
+            self.current_dt = ""
+        elif self.in_dl and tag == "dd":
+            self.in_dd = True
+            self.current_dd = ""
+        elif tag == "h1" and attrs.get("class") == "product-info__title" and attrs.get("itemprop") == "name":
+            self.in_h1 = True
+            self.title = ""
+        elif tag == "dl" and attrs.get("class") == "product-detail":
+            self.in_detail_dl = True
+        elif self.in_detail_dl and tag == "dt":
+            self.in_detail_dt = True
+            self.current_detail_dt = ""
+        elif self.in_detail_dl and tag == "dd":
+            self.in_detail_dd = True
+            self.current_detail_dd = ""
+        elif tag == "div" and attrs.get("class") == "brewing-instructions__container container":
+            self.in_brewing_div = True
+        elif self.in_brewing_div and tag == "th" and attrs.get("class") == "brewing-instructions__th":
+            self.in_th = True
+            self.current_th = ""
+        elif self.in_brewing_div and tag == "span" and attrs.get("class") == "brewing-instructions__value":
+            self.in_span = True
+            self.current_span = ""
+        elif tag == "a" and attrs.get("itemscope") == "" and attrs.get("itemtype") == "https://schema.org/Thing" and attrs.get("itemprop") == "name":
+            self.in_tea_type_a = True
+            self.tea_type = ""
+
+    def handle_endtag(self, tag):
+        if tag == "dl" and self.in_dl:
+            self.in_dl = False
+        elif self.in_dl and tag == "dt" and self.in_dt:
+            self.in_dt = False
+        elif self.in_dl and tag == "dd" and self.in_dd:
+            self.in_dd = False
+            self.notes[self.current_dt.strip()] = self.current_dd.strip()
+        elif tag == "h1" and self.in_h1:
+            self.in_h1 = False
+        elif tag == "dl" and self.in_detail_dl:
+            self.in_detail_dl = False
+        elif self.in_detail_dl and tag == "dt" and self.in_detail_dt:
+            self.in_detail_dt = False
+        elif self.in_detail_dl and tag == "dd" and self.in_detail_dd:
+            self.in_detail_dd = False
+            self.details[self.current_detail_dt.strip()] = self.current_detail_dd.strip()
+        elif tag == "div" and self.in_brewing_div:
+            self.in_brewing_div = False
+            mapped_ths = [self.key_mapping.get(th, th) for th in self.ths]
+            self.brewing = {"gong fu": dict(zip(mapped_ths[:5], self.spans[:5])), "western": dict(zip(mapped_ths[5:9], self.spans[5:9]))}
+            # Process WATER TEMP
+            for method in ["gong fu", "western"]:
+                if "WATER TEMP" in self.brewing[method]:
+                    temp_str = self.brewing[method]["WATER TEMP"]
+                    c_temp = temp_str.split('\n')[0].replace('°c', '').strip()
+                    try:
+                        c = float(c_temp)
+                        f = c * 9 / 5 + 32
+                        self.brewing[method]["WATER TEMP C"] = f"{c}°C"
+                        self.brewing[method]["WATER TEMP F"] = f"{f:.0f}°F"
+                        del self.brewing[method]["WATER TEMP"]
+                    except ValueError:
+                        print("VALUE ERROR!!!")
+        elif tag == "th" and self.in_th:
+            self.in_th = False
+            self.ths.append(self.current_th.strip())
+        elif tag == "span" and self.in_span:
+            self.in_span = False
+            self.spans.append(self.current_span.strip())
+        elif tag == "a" and self.in_tea_type_a:
+            self.in_tea_type_a = False
+
+    def handle_data(self, data):
+        if self.in_dt:
+            self.current_dt += data
+        elif self.in_dd:
+            self.current_dd += data
+        elif self.in_h1:
+            self.title += data
+        elif self.in_detail_dt:
+            self.current_detail_dt += data
+        elif self.in_detail_dd:
+            self.current_detail_dd += data
+        elif self.in_th:
+            self.current_th += data
+        elif self.in_span:
+            self.current_span += data
+        elif self.in_tea_type_a:
+            self.tea_type += data
+    def get_product_tasting_notes(self,link:str):
+        html = fetch_page(link)
+        parser = DataExtractor()
+        parser.feed(html)
+        return {"title": parser.title.strip(), "notes": parser.notes, "details": parser.details, "brewing": parser.brewing, "tea_type": parser.tea_type.strip()}
+
+
+
+
+
+
+
+
+
+
+if __name__ == "__main__":
+    fetchlinks=LinkExtractor()
+    links = fetchlinks.get_filtered_links()
+    link=links[1]
+    print(links)
+    input("Press Enter to continue...")
+    fetchdata=DataExtractor()
+    data = fetchdata.get_product_tasting_notes(link)
+    print(f"Title: {data['title']}")
+    print("TEA-TYPE:", data['tea_type'])
+    print("Tasting Notes:", data['notes'])
+    print("Details:", data['details'])
+    print("Brewing Instructions:", data['brewing'])
+    print()
+
