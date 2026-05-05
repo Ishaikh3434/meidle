@@ -34,9 +34,9 @@ function initializeTableHeaders() {
     const thead = document.querySelector('#guessesTable thead tr');
     if (!thead) return;
     
-    // Clear existing detail headers (keep first 3)
+    // Clear existing detail headers (keep first 2)
     const existingHeaders = thead.querySelectorAll('th');
-    while (existingHeaders.length > 3) {
+    while (existingHeaders.length > 2) {
         existingHeaders[existingHeaders.length - 1].remove();
         existingHeaders = thead.querySelectorAll('th');
     }
@@ -280,7 +280,6 @@ function addGuessToTable(attemptNum, guessedTitle, isCorrect, comparisonData) {
     let rowHTML = `
         <td class="attempt-col">${attemptNum}</td>
         <td class="tea-name-col">${escapeHtml(guessedTitle)}</td>
-        <td class="result-col">${escapeHtml(guessedTitle)}</td>
     `;
     
     // Add comparison data cells
