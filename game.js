@@ -55,14 +55,7 @@ function initializeTableHeaders() {
 /**
  * Columns to exclude from the display comparison
  */
-const EXCLUDED_COLUMNS = [
-    'url', 
-    'western_water_temp_c',
-    'western_water_temp_f',
-    'western_brewing_time_1st_infusion',
-    'western_brewing_time_2nd_infusion',
-    'western_brewing_time_3rd_infusion'
-];
+const EXCLUDED_COLUMNS = ['url', 'western_water_temp_c', 'western_water_temp_f'];
 
 /**
  * Convert snake_case column names to Title Case for display
@@ -176,8 +169,9 @@ async function startNewGame() {
     guessesHistory = [];
     
     document.getElementById('messageContainer').innerHTML = '';
-    document.getElementById('revealContainer').innerHTML = '';
-    document.getElementById('revealContainer').classList.add('hidden');
+    document.getElementById('comparisonContainer').innerHTML = '';
+    document.getElementById('comparisonContainer').classList.add('hidden');
+    document.getElementById('guessTitleContainer').classList.add('hidden');
     document.getElementById('attemptCounter').classList.add('hidden');
     document.getElementById('guessInput').value = '';
     document.getElementById('guessButton').style.display = 'inline-block';
@@ -242,9 +236,12 @@ function displayComparison(matchedTitle, guessTea) {
     document.getElementById('attemptCounter').classList.remove('hidden');
     document.getElementById('attemptNumber').textContent = attempts;
     
-    const revealContainer = document.getElementById('revealContainer');
-    revealContainer.innerHTML = '';
-    revealContainer.classList.remove('hidden');
+    document.getElementById('guessTitleContainer').classList.remove('hidden');
+    document.getElementById('guessTitle').textContent = `Your Guess: ${escapeHtml(matchedTitle)}`;
+    
+    const comparisonContainer = document.getElementById('comparisonContainer');
+    comparisonContainer.innerHTML = '';
+    comparisonContainer.classList.remove('hidden');
     
     const comparisonData = {};
     
@@ -262,13 +259,13 @@ function displayComparison(matchedTitle, guessTea) {
             comparisonData[col] = coloredValue;
             
             const row = document.createElement('div');
-            row.className = 'reveal-row';
+            row.className = 'comparison-row';
             const beautifulColName = beautifyColumnName(col);
             row.innerHTML = `
                 <div class="field-name">${escapeHtml(beautifulColName)}</div>
                 <div class="field-value">${coloredValue}</div>
             `;
-            revealContainer.appendChild(row);
+            comparisonContainer.appendChild(row);
         }
     }
     
