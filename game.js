@@ -125,13 +125,17 @@ function compareValues(randomVal, guessVal) {
     randomVal = String(randomVal).toLowerCase();
     guessVal = String(guessVal).toLowerCase();
     
-    if (randomVal === guessVal) {
+    // Remove punctuation for comparison
+    const randomValClean = randomVal.replace(/[^\w\s]/g, '');
+    const guessValClean = guessVal.replace(/[^\w\s]/g, '');
+    
+    if (randomValClean === guessValClean) {
         return `<span class="green">${escapeHtml(guessVal)}</span>`;
     }
     
     // Check for partial word matches (ignoring punctuation)
-    const randomWords = new Set(randomVal.split(/\s+/).map(removePunctuation));
-    const guessWords = guessVal.split(/\s+/);
+    const randomWords = new Set(randomValClean.split(/\s+/).map(removePunctuation));
+    const guessWords = guessValClean.split(/\s+/);
     
     const coloredWords = guessWords.map(word => {
         const cleanWord = removePunctuation(word);
