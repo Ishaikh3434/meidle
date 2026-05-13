@@ -69,6 +69,13 @@ function beautifyColumnName(col) {
 }
 
 /**
+ * Remove punctuation from a word for comparison purposes
+ */
+function removePunctuation(word) {
+    return word.replace(/[^\w]/g, '');
+}
+
+/**
  * Get a random tea from the products list
  */
 function getRandomProduct() {
@@ -108,7 +115,7 @@ function getProductByTitleFuzzy(guess) {
 /**
  * Compare two field values and return HTML with color coding
  * Green for matches, red for mismatches
- * Handles partial word matching
+ * Handles partial word matching and ignores punctuation
  */
 function compareValues(randomVal, guessVal) {
     if (!randomVal || !guessVal) {
@@ -122,13 +129,14 @@ function compareValues(randomVal, guessVal) {
         return `<span class="green">${escapeHtml(guessVal)}</span>`;
     }
     
-    // Check for partial word matches
-    const randomWords = new Set(randomVal.split(/\s+/));
+    // Check for partial word matches (ignoring punctuation)
+    const randomWords = new Set(randomVal.split(/\s+/).map(removePunctuation));
     const guessWords = guessVal.split(/\s+/);
     
     const coloredWords = guessWords.map(word => {
+        const cleanWord = removePunctuation(word);
         // Check if word is in random words or partially matches any random word
-        if (randomWords.has(word) || Array.from(randomWords).some(rw => rw.includes(word))) {
+        if (randomWords.has(cleanWord) || Array.from(randomWords).some(rw => rw.includes(cleanWord))) {
             return `<span class="green">${escapeHtml(word)}</span>`;
         } else {
             return `<span class="red">${escapeHtml(word)}</span>`;
