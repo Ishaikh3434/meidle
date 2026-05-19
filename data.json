@@ -23,13 +23,7 @@
     "gong_fu_increase",
     "gong_fu_number_of_steeps",
     "gong_fu_water_temp_c",
-    "gong_fu_water_temp_f",
-    "western_1st_steep",
-    "western_grams_per_100ml",
-    "western_increase",
-    "western_number_of_steeps",
-    "western_water_temp_c",
-    "western_water_temp_f"
+    "gong_fu_water_temp_f"
   ],
   "products": [
     {

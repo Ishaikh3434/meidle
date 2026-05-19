@@ -4,324 +4,406 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tea Guessing Game</title>
-    <style>
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+ <style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #25a0a0 0%, #2585a0 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+    :root {
+        /* Light Mode - Burgundy / Berry Theme */
+        --primary: #9d2b43;
+        --primary-hover: #c93a58;
+        
+        --bg: linear-gradient(135deg, #f5e9ed 0%, #f8f6f4 100%);
+        --card-bg: #ffffff;
+        --text: #1f1f1f;
+        --muted: #555555;
+        --panel-bg: #f8f6f4;
+        --border: #e0d9d9;
+        --input-bg: #ffffff;
+        --input-border: #e0d9d9;
+        
+        --button-bg: #9d2b43;
+        --button-hover: #c93a58;
+        
+        --error-bg: #ffeef0;
+        --error-text: #cb2431;
+        --success-bg: #f0f9f4;
+        --success-text: #22863a;
+        --info-bg: #eff7ff;
+        --info-text: #0366d6;
+    }
+
+    .dark-mode {
+        /* Dark Mode - Deep Teal Theme */
+        --primary: #002b3b;
+        --primary-hover: #005576;
+        
+        --bg: linear-gradient(135deg, #0a0f14 0%, #0f1a24 100%);
+        --card-bg: #13222e;
+        --text: #e8f0f5;
+        --muted: #a3b4c0;
+        --panel-bg: #1a2a38;
+        --border: #253b4a;
+        --input-bg: #1a2a38;
+        --input-border: #253b4a;
+        
+        --button-bg: #002b3b;
+        --button-hover: #005576;
+        
+        --error-bg: #3f1a1f;
+        --error-text: #f87171;
+        --success-bg: #1f3a2f;
+        --success-text: #4ade80;
+        --info-bg: #1e2a3f;
+        --info-text: #7dd3fc;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+    }
+
+    .logo {
+        font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    .container {
+        background: var(--card-bg);
+        border-radius: 15px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+        max-width: 800px;
+        width: 100%;
+        padding: 40px;
+    }
+
+    h1 {
+        text-align: center;
+        color: var(--text);
+        margin-bottom: 10px;
+        font-size: 2.5em;
+    }
+
+    .subtitle {
+        text-align: center;
+        color: var(--muted);
+        margin-bottom: 30px;
+        font-size: 1.1em;
+    }
+
+    .settings-panel {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        justify-content: center;
+        margin-bottom: 24px;
+        padding: 18px 16px;
+        background: var(--panel-bg);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+    }
+
+    .settings-item label {
+        color: var(--text);
+        font-weight: 600;
+        font-size: 0.95em;
+    }
+
+    .settings-item select {
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--input-border);
+        background: var(--input-bg);
+        color: var(--text);
+    }
+
+    .input-group {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    input[type="text"] {
+        flex: 1;
+        padding: 12px 15px;
+        border: 2px solid var(--input-border);
+        border-radius: 8px;
+        font-size: 1em;
+        background: var(--input-bg);
+        color: var(--text);
+        transition: border-color 0.3s;
+    }
+
+    input[type="text"]:focus {
+        outline: none;
+        border-color: var(--primary);
+    }
+
+    button {
+        padding: 12px 30px;
+        background: var(--button-bg);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1em;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    button:hover {
+        background: var(--button-hover);
+    }
+
+    button:disabled {
+        background: #777;
+        cursor: not-allowed;
+    }
+
+    .attempt-counter {
+        text-align: center;
+        font-size: 1.2em;
+        color: var(--primary);
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
+
+    .reveal-grid {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: var(--panel-bg);
+        border-radius: 8px;
+        border: 2px solid var(--border);
+    }
+
+    .reveal-row {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        gap: 15px;
+        padding: 12px;
+        background: var(--card-bg);
+        border-radius: 6px;
+        border: 1px solid var(--border);
+    }
+
+    .reveal-title {
+        font-size: 1.2em;
+        font-weight: 700;
+        margin-bottom: 12px;
+        color: var(--primary);
+    }
+
+    .reveal-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+        background: var(--card-bg);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .reveal-table th,
+    .reveal-table td {
+        padding: 14px 12px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        vertical-align: top;
+    }
+
+    .reveal-table th {
+        background: var(--panel-bg);
+        color: var(--text);
+        font-weight: 700;
+    }
+
+    /* === BLUR EFFECT - Restored & Improved === */
+    .blurred-word,
+    .revealed-word {
+        display: inline-block;
+        white-space: pre-wrap;
+        transition: filter 0.2s ease, color 0.2s ease;
+    }
+
+    .blurred-word {
+        filter: blur(4px);
+        color: transparent;
+        text-shadow: 0 0 3px rgba(0, 0, 0, 0.18);
+    }
+
+    .dark-mode .blurred-word {
+        text-shadow: 0 0 3px rgba(255, 255, 255, 0.12);
+    }
+
+    .revealed-word {
+        filter: none;
+        color: var(--text);
+        text-shadow: none;
+    }
+
+    .field-name {
+        font-weight: bold;
+        color: var(--text);
+        word-break: break-word;
+    }
+
+    .field-value {
+        word-break: break-word;
+        line-height: 1.5;
+        font-family: 'Courier New', monospace;
+        letter-spacing: 0.05em;
+    }
+
+    .revealed {
+        color: var(--success-text);
+        background: var(--success-bg);
+        font-weight: 600;
+    }
+
+    .hidden-char {
+        color: var(--muted);
+        background: var(--panel-bg);
+        padding: 2px 4px;
+        border-radius: 3px;
+        display: inline-block;
+    }
+
+    .green {
+        color: var(--success-text);
+        background: var(--success-bg);
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-weight: 500;
+    }
+
+    .red {
+        color: var(--error-text);
+        background: var(--error-bg);
+        padding: 2px 4px;
+        border-radius: 3px;
+    }
+
+    .message {
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        text-align: center;
+        font-weight: bold;
+    }
+
+    .error   { background: var(--error-bg);   color: var(--error-text);   border: 2px solid var(--error-text); }
+    .success { background: var(--success-bg); color: var(--success-text); border: 2px solid var(--success-text); }
+    .info    { background: var(--info-bg);    color: var(--info-text);    border: 2px solid var(--info-text); }
+
+    .guesses-section {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 2px solid var(--border);
+    }
+
+    #guessesTableContainer {
+        max-height: 300px;
+        overflow-y: auto;
+        overflow-x: auto;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--card-bg);
+    }
+
+    #guessesTable {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9em;
+        white-space: normal;
+    }
+
+    #guessesTable thead {
+        position: sticky;
+        top: 0;
+        background: var(--primary);
+        color: white;
+        z-index: 10;
+    }
+
+    #guessesTable th {
+        padding: 12px 8px;
+        text-align: left;
+        font-weight: bold;
+        border-bottom: 2px solid var(--primary);
+        min-width: 100px;
+    }
+
+    #guessesTable td {
+        padding: 10px 8px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        vertical-align: top;
+    }
+
+    #guessesTable tr:hover {
+        background: rgba(0, 0, 0, 0.04);
+    }
+
+    .dark-mode #guessesTable tr:hover {
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+    .dark-mode .container {
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    @media (max-width: 600px) {
+        .container {
             padding: 20px;
         }
-        .logo {
-           font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
-        }
-        .container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 800px;
-            width: 100%;
-            padding: 40px;
-        }
-
         h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 2.5em;
+            font-size: 2em;
         }
-
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 1.1em;
-        }
-
-        .game-section {
-            margin-bottom: 30px;
-        }
-
-        .input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        input[type="text"] {
-            flex: 1;
-            padding: 12px 15px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 1em;
-            transition: border-color 0.3s;
-        }
-
-        input[type="text"]:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        button {
-            padding: 12px 30px;
-            background: #25a0a0;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1em;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        button:hover {
-            background: #5568d3;
-        }
-
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-
-        .attempt-counter {
-            text-align: center;
-            font-size: 1.2em;
-            color: #667eea;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-
-        .reveal-grid {
-            display: grid;
-            gap: 10px;
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #f9f9f9;
-            border-radius: 8px;
-            border: 2px solid #ddd;
-        }
-
         .reveal-row {
-            display: grid;
-            grid-template-columns: 200px 1fr;
-            gap: 15px;
-            padding: 12px;
-            background: white;
-            border-radius: 6px;
-            border: 1px solid #eee;
+            grid-template-columns: 100px 1fr;
         }
-
-        .field-name {
-            font-weight: bold;
-            color: #333;
-            word-break: break-word;
+        .input-group {
+            flex-direction: column;
         }
-
-        .field-value {
-            word-break: break-word;
-            line-height: 1.5;
-            font-family: 'Courier New', monospace;
-            letter-spacing: 0.05em;
-        }
-
-        .revealed {
-            color: #22863a;
-            background: #f0f9f4;
-            font-weight: 600;
-        }
-
-        .hidden-char {
-            color: #999;
-            background: #e8e8e8;
-            padding: 2px 4px;
-            border-radius: 3px;
-            display: inline-block;
-        }
-
-        .green {
-            color: #22863a;
-            background: #f0f9f4;
-            padding: 2px 4px;
-            border-radius: 3px;
-            font-weight: 500;
-        }
-
-        .red {
-            color: #cb2431;
-            background: #ffeef0;
-            padding: 2px 4px;
-            border-radius: 3px;
-        }
-
-        .message {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            text-align: center;
-            font-weight: bold;
-        }
-
-        .error {
-            background: #ffeef0;
-            color: #cb2431;
-            border: 2px solid #cb2431;
-        }
-
-        .success {
-            background: #f0f9f4;
-            color: #22863a;
-            border: 2px solid #22863a;
-        }
-
-        .info {
-            background: #eff7ff;
-            color: #0366d6;
-            border: 2px solid #0366d6;
-        }
-
-        .guesses-section {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px solid #eee;
-        }
-
-        .guesses-title {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 15px;
-        }
-
-        #guessesTableContainer {
-            max-height: 300px;
-            overflow-y: auto;
-            overflow-x: auto;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background: white;
-        }
-
-        #guessesTable {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9em;
-            white-space: normal;
-        }
-
-        #guessesTable thead {
-            position: sticky;
-            top: 0;
-            background: #667eea;
-            color: white;
-            z-index: 10;
-        }
-
-        #guessesTable th {
-            padding: 12px 8px;
-            text-align: left;
-            font-weight: bold;
-            border-bottom: 2px solid #667eea;
-            min-width: 100px;
-        }
-
-        #guessesTable th.attempt-col {
-            min-width: 60px;
-            width: 60px;
-        }
-
-        #guessesTable th.tea-name-col {
-            min-width: 150px;
-        }
-
-        #guessesTable th.detail-col {
-            min-width: 120px;
-            font-size: 0.85em;
-            max-width: 200px;
-            word-break: break-word;
-        }
-
-        #guessesTable td {
-            padding: 10px 8px;
-            border-bottom: 1px solid #eee;
-            text-align: left;
-            vertical-align: top;
-        }
-
-        #guessesTable td.attempt-col {
-            font-weight: bold;
-            text-align: center;
-            width: 60px;
-        }
-
-        #guessesTable td.tea-name-col {
-            font-weight: 600;
-            min-width: 150px;
-        }
-
-        #guessesTable td.detail-col {
-            font-size: 0.85em;
-            min-width: 120px;
-            max-width: 200px;
-            word-wrap: break-word;
-        }
-
-        #guessesTable tr:hover {
-            background: #f5f5f5;
-        }
-
-        #guessesTable tr.correct {
-            background: #f0f9f4;
-        }
-
-        .loading {
-            text-align: center;
-            color: #667eea;
-            font-weight: bold;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        @media (max-width: 600px) {
-            .container {
-                padding: 20px;
-            }
-
-            h1 {
-                font-size: 2em;
-            }
-
-            .reveal-row {
-                grid-template-columns: 100px 1fr;
-            }
-
-            .input-group {
-                flex-direction: column;
-            }
-        }
-    
-    </style>
+    }
+</style>
 </head>
 <body>
     <div class="container">
         <h1 class="logo">Meidle</h1>
         <p class="subtitle">Can you guess the tea?</p>
 
+        <div class="settings-panel">
+            <div class="settings-item">
+                <label for="tempUnitSelect">Gong Fu Water Temp</label>
+                <select id="tempUnitSelect" onchange="handleSettingsChange()">
+                    <option value="C">Celsius</option>
+                    <option value="F">Fahrenheit</option>
+                </select>
+            </div>
+            <div class="settings-item">
+                <label for="themeSelect">Theme Mode</label>
+                <select id="themeSelect" onchange="handleSettingsChange()">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                </select>
+            </div>
+        </div>
+
         <div class="game-section">
             <div class="input-group">
                 <input type="text" id="guessInput" placeholder="Enter a tea name..." autocomplete="off">
                 <button id="guessButton" onclick="makeGuess()">Guess</button>
-                <button id="newGameButton" onclick="startNewGame()" style="display: none; background: #28a745;">New Game</button>
+                <button id="newGameButton" onclick="startNewGame()" style="display: none;">New Game</button>
             </div>
         </div>
 

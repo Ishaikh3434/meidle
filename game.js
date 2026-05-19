@@ -1,12 +1,14 @@
 // Game state
 let gameData = null; // Will contain { columns, products }
 let currentRandomTea = null;
+let revealState = {}; // Tracks matched words per field
 let attempts = 0;
 let gameWon = false;
 let guessesHistory = []; // Track all guesses
 
 // Load data on page load
 document.addEventListener('DOMContentLoaded', async () => {
+    loadSettings();
     await loadGameData();
     await startNewGame();
 });
@@ -35,20 +37,18 @@ function initializeTableHeaders() {
     if (!thead) return;
     
     // Clear existing detail headers (keep first 2)
-    const existingHeaders = thead.querySelectorAll('th');
+    let existingHeaders = thead.querySelectorAll('th');
     while (existingHeaders.length > 2) {
         existingHeaders[existingHeaders.length - 1].remove();
         existingHeaders = thead.querySelectorAll('th');
     }
     
-    // Add headers for each comparison field
-    for (const col of gameData.columns) {
-        if (!EXCLUDED_COLUMNS.includes(col)) {
-            const th = document.createElement('th');
-            th.className = 'detail-col';
-            th.textContent = beautifyColumnName(col);
-            thead.appendChild(th);
-        }
+    // Add headers for each visible field
+    for (const col of getVisibleColumns()) {
+        const th = document.createElement('th');
+        th.className = 'detail-col';
+        th.textContent = getColumnDisplayName(col);
+        thead.appendChild(th);
     }
 }
 
@@ -56,6 +56,37 @@ function initializeTableHeaders() {
  * Columns to exclude from the display comparison
  */
 const EXCLUDED_COLUMNS = ['url', 'western_water_temp_c', 'western_water_temp_f'];
+const DEFAULT_TEMP_UNIT = 'C';
+const DEFAULT_THEME_MODE = 'light';
+let tempUnit = DEFAULT_TEMP_UNIT;
+let themeMode = DEFAULT_THEME_MODE;
+
+function isGongFuTempColumn(col) {
+    return col === 'gong_fu_water_temp_c' || col === 'gong_fu_water_temp_f';
+}
+
+function getVisibleColumns() {
+    if (!gameData) {
+        return [];
+    }
+
+    return gameData.columns.filter(col => {
+        if (EXCLUDED_COLUMNS.includes(col)) {
+            return false;
+        }
+        if (isGongFuTempColumn(col)) {
+            return col === (tempUnit === 'C' ? 'gong_fu_water_temp_c' : 'gong_fu_water_temp_f');
+        }
+        return true;
+    });
+}
+
+function getColumnDisplayName(col) {
+    if (isGongFuTempColumn(col)) {
+        return 'Gong Fu Water Temp';
+    }
+    return beautifyColumnName(col);
+}
 
 /**
  * Convert snake_case column names to Title Case for display
@@ -66,6 +97,178 @@ function beautifyColumnName(col) {
         .split('_')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
+}
+
+/**
+ * Build the reveal table with blurred words for the random tea
+ */
+function buildRevealTable() {
+    const comparisonContainer = document.getElementById('comparisonContainer');
+    if (!comparisonContainer) return;
+    comparisonContainer.innerHTML = '<div class="reveal-title">Random Tea Info</div>';
+    comparisonContainer.classList.remove('hidden');
+
+    const table = document.createElement('table');
+    table.className = 'reveal-table';
+
+    const thead = document.createElement('thead');
+    thead.innerHTML = `
+        <tr>
+            <th>Field</th>
+            <th>Info</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+
+    for (const col of getVisibleColumns()) {
+        const randomVal = currentRandomTea[col] || '';
+        if (!randomVal) {
+            continue;
+        }
+
+        const row = document.createElement('tr');
+        const labelCell = document.createElement('td');
+        labelCell.className = 'field-name';
+        labelCell.textContent = getColumnDisplayName(col);
+
+        const valueCell = document.createElement('td');
+        valueCell.className = 'field-value';
+        valueCell.innerHTML = renderRevealValue(randomVal, col);
+
+        row.appendChild(labelCell);
+        row.appendChild(valueCell);
+        tbody.appendChild(row);
+    }
+
+    table.appendChild(tbody);
+    comparisonContainer.appendChild(table);
+}
+
+function applyTheme() {
+    const root = document.documentElement;
+    root.classList.toggle('dark-mode', themeMode === 'dark');
+    root.classList.toggle('light-mode', themeMode === 'light');
+}
+
+function saveSettings() {
+    localStorage.setItem('MEIDLE_TEMP_UNIT', tempUnit);
+    localStorage.setItem('MEIDLE_THEME_MODE', themeMode);
+}
+
+function loadSettings() {
+    const savedTempUnit = localStorage.getItem('MEIDLE_TEMP_UNIT');
+    const savedThemeMode = localStorage.getItem('MEIDLE_THEME_MODE');
+
+    if (savedTempUnit === 'C' || savedTempUnit === 'F') {
+        tempUnit = savedTempUnit;
+    }
+
+    if (savedThemeMode === 'light' || savedThemeMode === 'dark') {
+        themeMode = savedThemeMode;
+    }
+
+    const tempUnitSelect = document.getElementById('tempUnitSelect');
+    const themeSelect = document.getElementById('themeSelect');
+
+    if (tempUnitSelect) {
+        tempUnitSelect.value = tempUnit;
+    }
+    if (themeSelect) {
+        themeSelect.value = themeMode;
+    }
+
+    applyTheme();
+}
+
+function handleSettingsChange() {
+    const tempUnitSelect = document.getElementById('tempUnitSelect');
+    const themeSelect = document.getElementById('themeSelect');
+
+    if (tempUnitSelect) {
+        tempUnit = tempUnitSelect.value;
+    }
+    if (themeSelect) {
+        themeMode = themeSelect.value;
+    }
+
+    saveSettings();
+    applyTheme();
+    initializeTableHeaders();
+    buildRevealTable();
+    rebuildGuessHistoryTable();
+}
+
+function rebuildGuessHistoryTable() {
+    const tbody = document.getElementById('guessesTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    for (const guess of guessesHistory) {
+        addGuessToTable(guess.attemptNum, guess.guessedTitle, guess.isCorrect, guess.comparisonData);
+    }
+}
+
+/**
+ * Render a field value with blurred words and revealed matches
+ */
+function renderRevealValue(randomVal, col) {
+    const revealedWords = revealState[col] || new Set();
+    const tokens = String(randomVal).split(/(\s+)/);
+
+    return tokens.map(token => {
+        if (!token.trim()) {
+            return escapeHtml(token);
+        }
+
+        const normalized = token.toLowerCase();
+        const isRevealed = revealedWords.has(normalized);
+        const className = isRevealed ? 'revealed-word' : 'blurred-word';
+
+        return `<span class="${className}" data-col="${escapeHtml(col)}" data-word="${escapeHtml(normalized)}">${escapeHtml(token)}</span>`;
+    }).join('');
+}
+
+/**
+ * Update the reveal state based on the latest guessed tea
+ */
+function updateRevealState(guessTea) {
+    for (const col of gameData.columns) {
+        if (EXCLUDED_COLUMNS.includes(col)) {
+            continue;
+        }
+
+        const randomVal = currentRandomTea[col] || '';
+        const guessVal = guessTea[col] || '';
+        const matchedWords = getMatchingWords(randomVal, guessVal);
+
+        if (!matchedWords.length) {
+            continue;
+        }
+
+        if (!revealState[col]) {
+            revealState[col] = new Set();
+        }
+
+        matchedWords.forEach(word => revealState[col].add(word));
+    }
+}
+
+/**
+ * Find matching words between random tea value and guess value
+ */
+function getMatchingWords(randomVal, guessVal) {
+    if (!randomVal || !guessVal) {
+        return [];
+    }
+
+    const randomWords = new Set(String(randomVal).toLowerCase().split(/\s+/).filter(Boolean));
+    const guessWords = String(guessVal).toLowerCase().split(/\s+/).filter(Boolean);
+
+    return guessWords.filter(word =>
+        randomWords.has(word) || Array.from(randomWords).some(rw => rw.includes(word))
+    );
 }
 
 /**
@@ -179,6 +382,8 @@ async function startNewGame() {
     }
     
     currentRandomTea = getRandomProduct();
+    revealState = {};
+    buildRevealTable();
     showInfo('A random tea has been chosen. Can you guess which one?');
 }
 
@@ -204,7 +409,9 @@ function makeGuess() {
     const guessTea = result.product;
     const matchedTitle = result.matchedTitle;
     
+    updateRevealState(guessTea);
     displayComparison(matchedTitle, guessTea);
+    buildRevealTable();
     
     // Check if guessed correctly (compare all fields)
     if (JSON.stringify(currentRandomTea) === JSON.stringify(guessTea)) {
@@ -231,38 +438,20 @@ function displayComparison(matchedTitle, guessTea) {
     document.getElementById('guessTitleContainer').classList.remove('hidden');
     document.getElementById('guessTitle').textContent = `Your Guess: ${escapeHtml(matchedTitle)}`;
     
-    const comparisonContainer = document.getElementById('comparisonContainer');
-    comparisonContainer.innerHTML = '';
-    comparisonContainer.classList.remove('hidden');
-    
     const comparisonData = {};
     
-    for (const col of gameData.columns) {
-        // Skip excluded columns
-        if (EXCLUDED_COLUMNS.includes(col)) {
-            continue;
-        }
-        
+    for (const col of getVisibleColumns()) {
         const randomVal = currentRandomTea[col] || '';
         const guessVal = guessTea[col] || '';
         
         if (randomVal) {
             const coloredValue = compareValues(randomVal, guessVal);
             comparisonData[col] = coloredValue;
-            
-            const row = document.createElement('div');
-            row.className = 'comparison-row';
-            const beautifulColName = beautifyColumnName(col);
-            row.innerHTML = `
-                <div class="field-name">${escapeHtml(beautifulColName)}</div>
-                <div class="field-value">${coloredValue}</div>
-            `;
-            comparisonContainer.appendChild(row);
         }
     }
     
-    // Add to guesses history table
     const isCorrect = JSON.stringify(currentRandomTea) === JSON.stringify(guessTea);
+    guessesHistory.push({ attemptNum: attempts, guessedTitle: matchedTitle, isCorrect, comparisonData });
     addGuessToTable(attempts, matchedTitle, isCorrect, comparisonData);
 }
 
@@ -276,27 +465,20 @@ function addGuessToTable(attemptNum, guessedTitle, isCorrect, comparisonData) {
     const row = document.createElement('tr');
     row.className = isCorrect ? 'guess-row correct' : 'guess-row';
     
-    // Build header cells
     let rowHTML = `
         <td class="attempt-col">${attemptNum}</td>
         <td class="tea-name-col">${escapeHtml(guessedTitle)}</td>
     `;
     
-    // Add comparison data cells
-    for (const col of gameData.columns) {
-        if (!EXCLUDED_COLUMNS.includes(col)) {
-            const value = comparisonData[col] || '';
-            if (value) {
-                const beautifulColName = beautifyColumnName(col);
-                rowHTML += `<td class="detail-col" title="${beautifulColName}">${value}</td>`;
-            }
-        }
+    for (const col of getVisibleColumns()) {
+        const value = comparisonData[col] || '';
+        const title = getColumnDisplayName(col);
+        rowHTML += `<td class="detail-col" title="${escapeHtml(title)}">${value}</td>`;
     }
     
     row.innerHTML = rowHTML;
     tbody.appendChild(row);
     
-    // Scroll table to bottom
     const tableContainer = document.getElementById('guessesTableContainer');
     if (tableContainer) {
         setTimeout(() => {
