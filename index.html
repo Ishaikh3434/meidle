@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tea Guessing Game</title>
     <style>
+        
         * {
             margin: 0;
             padding: 0;
@@ -13,14 +14,16 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #25a0a0 0%, #2585a0 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
         }
-
+        .logo {
+           font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
+        }
         .container {
             background: white;
             border-radius: 15px;
@@ -70,7 +73,7 @@
 
         button {
             padding: 12px 30px;
-            background: #667eea;
+            background: #25a0a0;
             color: white;
             border: none;
             border-radius: 8px;
@@ -97,22 +100,21 @@
             margin-bottom: 20px;
         }
 
-        .comparison-grid {
+        .reveal-grid {
             display: grid;
             gap: 10px;
             margin-bottom: 20px;
-            max-height: 400px;
-            overflow-y: auto;
-            padding: 10px;
+            padding: 15px;
             background: #f9f9f9;
             border-radius: 8px;
+            border: 2px solid #ddd;
         }
 
-        .comparison-row {
+        .reveal-row {
             display: grid;
             grid-template-columns: 200px 1fr;
             gap: 15px;
-            padding: 10px;
+            padding: 12px;
             background: white;
             border-radius: 6px;
             border: 1px solid #eee;
@@ -127,6 +129,22 @@
         .field-value {
             word-break: break-word;
             line-height: 1.5;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 0.05em;
+        }
+
+        .revealed {
+            color: #22863a;
+            background: #f0f9f4;
+            font-weight: 600;
+        }
+
+        .hidden-char {
+            color: #999;
+            background: #e8e8e8;
+            padding: 2px 4px;
+            border-radius: 3px;
+            display: inline-block;
         }
 
         .green {
@@ -168,17 +186,6 @@
             background: #eff7ff;
             color: #0366d6;
             border: 2px solid #0366d6;
-        }
-
-        .guess-title {
-            font-size: 1.3em;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 15px;
-            text-align: center;
-            padding: 10px;
-            background: #f0f0f0;
-            border-radius: 6px;
         }
 
         .guesses-section {
@@ -235,10 +242,6 @@
             min-width: 150px;
         }
 
-        #guessesTable th.result-col {
-            min-width: 90px;
-        }
-
         #guessesTable th.detail-col {
             min-width: 120px;
             font-size: 0.85em;
@@ -264,10 +267,6 @@
             min-width: 150px;
         }
 
-        #guessesTable td.result-col {
-            min-width: 90px;
-        }
-
         #guessesTable td.detail-col {
             font-size: 0.85em;
             min-width: 120px;
@@ -281,15 +280,6 @@
 
         #guessesTable tr.correct {
             background: #f0f9f4;
-        }
-
-        #guessesTable tr.correct td.result-col {
-            color: #22863a;
-            font-weight: bold;
-        }
-
-        #guessesTable tr:not(.correct) td.result-col {
-            color: #cb2431;
         }
 
         .loading {
@@ -311,7 +301,7 @@
                 font-size: 2em;
             }
 
-            .comparison-row {
+            .reveal-row {
                 grid-template-columns: 100px 1fr;
             }
 
@@ -319,11 +309,12 @@
                 flex-direction: column;
             }
         }
+    
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🍵 Tea Guessing Game</h1>
+        <h1 class="logo">Meidle</h1>
         <p class="subtitle">Can you guess the tea?</p>
 
         <div class="game-section">
