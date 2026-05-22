@@ -3,7 +3,11 @@ import urllib.request
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
-PAGE_URL = "https://meileaf.com/teas/pure/"
+PAGE_URLS = [
+    "https://meileaf.com/teas/pure/",
+    "https://meileaf.com/teas/blends/",
+]
+PAGE_URL = PAGE_URLS[0]
 
 def fetch_page(link: str = PAGE_URL) -> str:
     request = urllib.request.Request(link, headers={"User-Agent": "Mozilla/5.0"})
@@ -13,8 +17,10 @@ def fetch_page(link: str = PAGE_URL) -> str:
 
 class LinkExtractor:
     def get_filtered_links(self):
-        soup = BeautifulSoup(fetch_page(), "html.parser")
-        links = [urljoin(PAGE_URL, a["href"]) for a in soup.find_all("a", href=True)] #type:ignore
+        links = []
+        for page_url in PAGE_URLS:
+            soup = BeautifulSoup(fetch_page(page_url), "html.parser")
+            links.extend(urljoin(page_url, a["href"]) for a in soup.find_all("a", href=True)) #type:ignore
         filtered = list(set(
             link for link in links
             if link.startswith("https://meileaf.com/p/") and "tea-" in link

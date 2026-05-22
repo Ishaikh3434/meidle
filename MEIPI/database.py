@@ -1,4 +1,5 @@
 import sqlite3
+import json
 from api import LinkExtractor, DataExtractor
 
 # Test mode toggle
@@ -102,6 +103,40 @@ def insert_product(conn, data, url):
     cursor.execute(insert_query, values)
     conn.commit()
 
+def export_database_to_json(db_path='MEIPI/meileaf_products.db', output_path='data.json'):
+    """
+    Convert meileaf_products.db to data.json format
+    """
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    # Get all columns
+    cursor.execute("PRAGMA table_info(products)")
+    columns = [row[1] for row in cursor.fetchall()]
+    
+    # Get all products
+    cursor.execute("SELECT * FROM products")
+    rows = cursor.fetchall()
+    
+    # Convert to list of dictionaries
+    products = []
+    for row in rows:
+        product = dict(zip(columns, row))
+        products.append(product)
+    
+    # Create the JSON structure
+    data = {
+        "columns": columns,
+        "products": products
+    }
+    
+    # Write to JSON file
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+    
+    conn.close()
+    print(f"Exported {len(products)} products to {output_path}")
+
 def main():
     # Get links
     link_extractor = LinkExtractor()
@@ -124,7 +159,8 @@ def main():
             print(f"Error processing {url}: {e}")
     
     conn.close()
-    print("Database creation complete.")
-
+    if input("Database creation complete. Export to json [Y/N]?").upper()=="Y":
+        export_database_to_json()
+        print("Done.")
 if __name__ == "__main__":
     main()
